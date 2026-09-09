@@ -10,6 +10,7 @@ public class CadastrarPessoaUseCase {
     public Pessoa executar(CadastrarPessoaCommand command) {
 
         Pessoa pessoa = new Pessoa(command.getNomePessoa(), command.getEmailPessoa());
+        command.id = pessoa.id;
 
         return pessoa;
     }
