@@ -1,0 +1,15 @@
+body {
+    font-family: Arial
+}
+
+.container {
+    width: 400px;
+    margin: 50px auto
+}
+
+input,
+button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px
+}

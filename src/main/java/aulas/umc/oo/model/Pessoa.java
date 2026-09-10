@@ -34,6 +34,7 @@ public class Pessoa extends Domain{
     }
 
     public Pessoa (NomePessoa nome,Email email) {
+        this.id = UUID.randomUUID();
         this.nome = nome;
         this.email = email;
         this.enderecos = new ArrayList<>();
