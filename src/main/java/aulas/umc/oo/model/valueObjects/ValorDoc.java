@@ -1,4 +1,4 @@
-package model.valueObjects;
+package aulas.umc.oo.model.valueObjects;
 
 public class ValorDoc {
     private String valor;
