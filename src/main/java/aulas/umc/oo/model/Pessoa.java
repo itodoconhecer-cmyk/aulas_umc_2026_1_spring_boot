@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class Pessoa extends Domain{
-    public IdadePessoa idadePessoa;
     public NomePessoa nome;
     public IdadePessoa idade;
     public Email email;
