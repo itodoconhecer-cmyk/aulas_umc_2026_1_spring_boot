@@ -1,33 +1,22 @@
 -- DDL gerado a partir das classes do pacote aulas.umc.oo.model
--- Instruções:
--- 1) Conectar ao servidor PostgreSQL (por exemplo, database postgres) com superuser/"raiz" e executar este arquivo.
--- 2) O CREATE DATABASE só funcionará quando conectado ao database "postgres" ou outro DB existente.
-
--- 1) criar o banco
-CREATE DATABASE oo_db;
-
--- A partir daqui reconectar em oo_db e executar o restante (ou executar com psql -d oo_db)
+-- Essa versão é idempotente: se o banco e as tabelas já existirem, nada será alterado.
 
 -- Habilita função de gerar UUIDs
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Tabela: pessoa  (classe: aulas.umc.oo.model.Pessoa)
-DROP TABLE IF EXISTS documento CASCADE;
-DROP TABLE IF EXISTS endereco CASCADE;
-DROP TABLE IF EXISTS pessoa CASCADE;
-
-CREATE TABLE pessoa (
+CREATE TABLE IF NOT EXISTS pessoa (
   id UUID PRIMARY KEY,
-  nome VARCHAR(200) NOT NULL,                -- NomePessoa.valor
-  idade INTEGER NOT NULL CHECK (idade BETWEEN 18 AND 99), -- IdadePessoa.valor
-  email VARCHAR(255),                         -- Email.valor (opcional em uma das construtoras)
-  tipo_sanguineo VARCHAR(10),                -- atributo tipoSanguineo
-  status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (1,2,3)), -- 1=ativo,2=inativo,3=excluido
+  nome VARCHAR(200) NOT NULL,
+  idade INTEGER NOT NULL CHECK (idade BETWEEN 18 AND 99),
+  email VARCHAR(255),
+  tipo_sanguineo VARCHAR(10),
+  status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (1,2,3)),
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- Tabela: endereco (classe: aulas.umc.oo.model.Endereco)
-CREATE TABLE endereco (
+CREATE TABLE IF NOT EXISTS endereco (
   id UUID PRIMARY KEY,
   pessoa_id UUID NOT NULL REFERENCES pessoa(id) ON DELETE CASCADE,
   rua VARCHAR(200),
@@ -37,12 +26,12 @@ CREATE TABLE endereco (
 );
 
 -- Tabela: documento (classe: aulas.umc.oo.model.Documento)
-CREATE TABLE documento (
+CREATE TABLE IF NOT EXISTS documento (
   id UUID PRIMARY KEY,
   pessoa_id UUID NOT NULL REFERENCES pessoa(id) ON DELETE CASCADE,
-  tipo VARCHAR(50),          -- Tipo.valor
-  valor VARCHAR(200),        -- ValorDoc.valor
-  demais_dados TEXT,         -- DemaisDados.valor
+  tipo VARCHAR(50),
+  valor VARCHAR(200),
+  demais_dados TEXT,
   status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (1,2,3))
 );
 

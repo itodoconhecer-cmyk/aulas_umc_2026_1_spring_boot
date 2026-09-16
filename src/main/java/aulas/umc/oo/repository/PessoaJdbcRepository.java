@@ -1,11 +1,13 @@
 package aulas.umc.oo.repository;
 
 import aulas.umc.oo.model.Pessoa;
+import aulas.umc.oo.utilities.ConexaoPostGreSQL;
 import model.valueObjects.Email;
 import model.valueObjects.IdadePessoa;
 import model.valueObjects.NomePessoa;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class PessoaJdbcRepository implements PessoaRepository {
-    private final DataSource ds;
+
 
     private static final String INSERT = "INSERT INTO pessoa (id, nome, idade, email, tipo_sanguineo, status, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String SELECT_ALL = "SELECT id, nome, idade, email, tipo_sanguineo, status, criado_em FROM pessoa WHERE status != 3";
@@ -23,13 +25,14 @@ public class PessoaJdbcRepository implements PessoaRepository {
     private static final String INSERT_ENDERECO = "INSERT INTO endereco (id, pessoa_id, rua, numero, cidade, status) VALUES (?, ?, ?, ?, ?, ?)";
     private static final String INSERT_DOCUMENTO = "INSERT INTO documento (id, pessoa_id, tipo, valor, demais_dados, status) VALUES (?, ?, ?, ?, ?, ?)";
 
-    public PessoaJdbcRepository(DataSource ds) {
-        this.ds = ds;
-    }
-
     @Override
-    public void insert(Pessoa pessoa) {
-        try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(INSERT)) {
+    public void insert(Pessoa pessoa) throws IOException {
+
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(INSERT)) {
+
             ps.setObject(1, pessoa.id);
             ps.setString(2, pessoa.nome.getValor());
             ps.setInt(3, pessoa.idade.getValor());
@@ -44,7 +47,9 @@ public class PessoaJdbcRepository implements PessoaRepository {
     }
 
     @Override
-    public List<Pessoa> findAll() {
+    public List<Pessoa> findAll() throws IOException {
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(SELECT_ALL); ResultSet rs = ps.executeQuery()) {
             List<Pessoa> list = new ArrayList<>();
             while (rs.next()) {
@@ -57,7 +62,8 @@ public class PessoaJdbcRepository implements PessoaRepository {
     }
 
     @Override
-    public Optional<Pessoa> findById(UUID id) {
+    public Optional<Pessoa> findById(UUID id) throws IOException {
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(SELECT_BY_ID)) {
             ps.setObject(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -72,7 +78,9 @@ public class PessoaJdbcRepository implements PessoaRepository {
     }
 
     @Override
-    public void update(Pessoa pessoa) {
+    public void update(Pessoa pessoa) throws IOException {
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(UPDATE)) {
             ps.setString(1, pessoa.nome.getValor());
             ps.setInt(2, pessoa.idade.getValor());
@@ -90,7 +98,8 @@ public class PessoaJdbcRepository implements PessoaRepository {
     }
 
     @Override
-    public void deleteLogical(UUID id) {
+    public void deleteLogical(UUID id) throws IOException {
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(DELETE_LOGICAL)) {
             ps.setObject(1, id);
             ps.executeUpdate();
@@ -100,7 +109,8 @@ public class PessoaJdbcRepository implements PessoaRepository {
     }
 
     @Override
-    public void insertWithRelations(Pessoa pessoa, java.util.List<aulas.umc.oo.model.Endereco> enderecos, java.util.List<aulas.umc.oo.model.Documento> documentos) {
+    public void insertWithRelations(Pessoa pessoa, java.util.List<aulas.umc.oo.model.Endereco> enderecos, java.util.List<aulas.umc.oo.model.Documento> documentos) throws IOException {
+        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
         try (Connection c = ds.getConnection()) {
             try {
                 c.setAutoCommit(false);

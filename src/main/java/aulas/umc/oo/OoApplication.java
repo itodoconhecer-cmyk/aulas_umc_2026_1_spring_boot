@@ -6,7 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class OoApplication {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+		DatabaseInitializer.run();
 		SpringApplication.run(OoApplication.class, args);
 	}
 

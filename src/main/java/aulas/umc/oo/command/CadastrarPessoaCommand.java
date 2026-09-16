@@ -6,6 +6,7 @@ import aulas.umc.oo.UseCase.CadastrarPessoaUseCase;
 import model.valueObjects.Email;
 import model.valueObjects.NomePessoa;
 
+import java.io.IOException;
 import java.util.UUID;
 
 public class CadastrarPessoaCommand {
@@ -23,7 +24,7 @@ public class CadastrarPessoaCommand {
     }
 
 
-    public CadastroPessoaResponse CadastrarPessoaCommand(String nomePessoa, String email) {
+    public CadastroPessoaResponse CadastrarPessoaCommand(String nomePessoa, String email) throws IOException {
 
         CadastrarPessoaUseCase cadastrarPessoaUseCase = new CadastrarPessoaUseCase();
         this.nomePessoa = new NomePessoa(nomePessoa);
