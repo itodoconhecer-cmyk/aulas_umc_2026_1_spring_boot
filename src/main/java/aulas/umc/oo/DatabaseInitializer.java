@@ -28,15 +28,21 @@ public class DatabaseInitializer {
     public static void run() throws Exception {
         Properties props = loadProperties();
 
-        String host = props.getProperty("db.host", "localhost");
-        int port = Integer.parseInt(props.getProperty("db.port", "5432"));
-        String database = props.getProperty("db.name", "bdoo");
-        String user = props.getProperty("db.user", "postgres");
-        String password = props.getProperty("db.password", "");
+        String adminHost = props.getProperty("dbadm.host", props.getProperty("db.host", "localhost"));
+        int adminPort = Integer.parseInt(props.getProperty("dbadm.port", props.getProperty("db.port", "5432")));
+        String adminUser = props.getProperty("dbadm.user", props.getProperty("db.user", "postgres"));
+        String adminPassword = props.getProperty("dbadm.password", props.getProperty("db.password", ""));
 
-        System.out.println("[DatabaseInitializer] Verificando banco PostgreSQL: " + database + " em " + host + ":" + port);
-        ensureDatabaseExists(host, port, database, user, password);
-        executeSchemaScript(host, port, database, user, password);
+        String targetHost = props.getProperty("db.host", adminHost);
+        int targetPort = Integer.parseInt(props.getProperty("db.port", String.valueOf(adminPort)));
+        String targetDatabase = props.getProperty("db.name", "bdoo");
+        String targetUser = props.getProperty("db.user", adminUser);
+        String targetPassword = props.getProperty("db.password", adminPassword);
+
+        System.out.println("[DatabaseInitializer] Verificando banco PostgreSQL: " + targetDatabase + " em " + targetHost + ":" + targetPort);
+        ensureDatabaseExists(adminHost, adminPort, targetDatabase, adminUser, adminPassword);
+        executeSchemaScript(targetHost, targetPort, targetDatabase, targetUser, targetPassword);
+        validateRequiredTables(targetHost, targetPort, targetDatabase, targetUser, targetPassword);
         System.out.println("[DatabaseInitializer] Banco e tabelas prontos.");
     }
 
@@ -52,7 +58,7 @@ public class DatabaseInitializer {
     }
 
     private static void ensureDatabaseExists(String host, int port, String database, String user, String password) throws SQLException {
-        String adminUrl = "jdbc:postgresql://" + host + ":" + port + "/postgres";
+        String adminUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database;
 
         try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
              PreparedStatement statement = connection.prepareStatement(
@@ -64,22 +70,40 @@ public class DatabaseInitializer {
                     return;
                 }
             }
+        } catch (Exception ex) {
+            adminUrl = "jdbc:postgresql://" + host + ":" + port + "/postgres";
+            try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
+                 Statement statement = connection.createStatement()) {
+                statement.execute("CREATE DATABASE " + database);
+            }
         }
 
-        try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
-             Statement statement = connection.createStatement()) {
-            statement.execute("CREATE DATABASE " + database);
-        }
+
     }
 
     private static void executeSchemaScript(String host, int port, String database, String user, String password)
             throws IOException, SQLException, URISyntaxException {
         String scriptContent = Files.readString(resolveScriptPath(), StandardCharsets.UTF_8);
+        List<String> statements = parseSqlStatements(scriptContent);
+
+        String url = "jdbc:postgresql://" + host + ":" + port + "/" + database;
+        try (Connection connection = DriverManager.getConnection(url, user, password);
+             Statement statement = connection.createStatement()) {
+            for (String sql : statements) {
+                statement.execute(sql);
+            }
+        }
+    }
+
+    private static List<String> parseSqlStatements(String scriptContent) {
+        String withoutComments = scriptContent
+                .replaceAll("(?m)--.*$", "")
+                .replaceAll("(?s)/\\*.*?\\*/", " ");
 
         List<String> statements = new ArrayList<>();
-        for (String part : scriptContent.split("(?s);") ) {
+        for (String part : withoutComments.split(";")) {
             String normalized = part.trim();
-            if (normalized.isEmpty() || normalized.startsWith("--")) {
+            if (normalized.isEmpty()) {
                 continue;
             }
 
@@ -90,12 +114,19 @@ public class DatabaseInitializer {
 
             statements.add(normalized + ";");
         }
+        return statements;
+    }
 
+    private static void validateRequiredTables(String host, int port, String database, String user, String password) throws SQLException {
         String url = "jdbc:postgresql://" + host + ":" + port + "/" + database;
         try (Connection connection = DriverManager.getConnection(url, user, password);
-             Statement statement = connection.createStatement()) {
-            for (String sql : statements) {
-                statement.execute(sql);
+             Statement statement = connection.createStatement();
+             ResultSet rs = statement.executeQuery(
+                     "SELECT to_regclass('public.pessoa'), to_regclass('public.endereco'), to_regclass('public.documento')")) {
+            if (rs.next()) {
+                if (rs.getObject(1) == null || rs.getObject(2) == null || rs.getObject(3) == null) {
+                    throw new IllegalStateException("Schema do banco incompleto. Tabelas pessoa/endereco/documento não foram criadas no banco " + database);
+                }
             }
         }
     }
