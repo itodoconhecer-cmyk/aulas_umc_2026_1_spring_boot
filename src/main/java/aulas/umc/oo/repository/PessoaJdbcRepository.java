@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public class PessoaJdbcRepository implements PessoaRepository {
 
+    private final DataSource dataSource;
 
     private static final String INSERT = "INSERT INTO pessoa (id, nome, idade, email, tipo_sanguineo, status, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String SELECT_ALL = "SELECT id, nome, idade, email, tipo_sanguineo, status, criado_em FROM pessoa WHERE status != 3";
@@ -25,10 +26,18 @@ public class PessoaJdbcRepository implements PessoaRepository {
     private static final String INSERT_ENDERECO = "INSERT INTO endereco (id, pessoa_id, rua, numero, cidade, status) VALUES (?, ?, ?, ?, ?, ?)";
     private static final String INSERT_DOCUMENTO = "INSERT INTO documento (id, pessoa_id, tipo, valor, demais_dados, status) VALUES (?, ?, ?, ?, ?, ?)";
 
+    public PessoaJdbcRepository() {
+        this.dataSource = null;
+    }
+
+    public PessoaJdbcRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
     @Override
     public void insert(Pessoa pessoa) throws IOException {
 
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
 
         try (Connection c = ds.getConnection();
              PreparedStatement ps = c.prepareStatement(INSERT)) {
@@ -48,7 +57,7 @@ public class PessoaJdbcRepository implements PessoaRepository {
 
     @Override
     public List<Pessoa> findAll() throws IOException {
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
 
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(SELECT_ALL); ResultSet rs = ps.executeQuery()) {
             List<Pessoa> list = new ArrayList<>();
@@ -63,7 +72,7 @@ public class PessoaJdbcRepository implements PessoaRepository {
 
     @Override
     public Optional<Pessoa> findById(UUID id) throws IOException {
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(SELECT_BY_ID)) {
             ps.setObject(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -79,7 +88,7 @@ public class PessoaJdbcRepository implements PessoaRepository {
 
     @Override
     public void update(Pessoa pessoa) throws IOException {
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
 
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(UPDATE)) {
             ps.setString(1, pessoa.nome.getValor());
@@ -99,7 +108,7 @@ public class PessoaJdbcRepository implements PessoaRepository {
 
     @Override
     public void deleteLogical(UUID id) throws IOException {
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(DELETE_LOGICAL)) {
             ps.setObject(1, id);
             ps.executeUpdate();
@@ -110,7 +119,7 @@ public class PessoaJdbcRepository implements PessoaRepository {
 
     @Override
     public void insertWithRelations(Pessoa pessoa, java.util.List<aulas.umc.oo.model.Endereco> enderecos, java.util.List<aulas.umc.oo.model.Documento> documentos) throws IOException {
-        DataSource ds = ConexaoPostGreSQL.createFromApplicationProperties();
+        DataSource ds = getDataSource();
         try (Connection c = ds.getConnection()) {
             try {
                 c.setAutoCommit(false);
@@ -178,5 +187,13 @@ public class PessoaJdbcRepository implements PessoaRepository {
         p.idade = new IdadePessoa(idade);
         p.tipoSanguineo = tipoSanguineo;
         return p;
+    }
+
+    private DataSource getDataSource() throws IOException {
+        if (dataSource != null) {
+            return dataSource;
+        }
+
+        return ConexaoPostGreSQL.createFromApplicationProperties();
     }
 }

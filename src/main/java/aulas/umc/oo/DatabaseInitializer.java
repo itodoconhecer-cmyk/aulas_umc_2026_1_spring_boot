@@ -32,6 +32,7 @@ public class DatabaseInitializer {
         int adminPort = Integer.parseInt(props.getProperty("dbadm.port", props.getProperty("db.port", "5432")));
         String adminUser = props.getProperty("dbadm.user", props.getProperty("db.user", "postgres"));
         String adminPassword = props.getProperty("dbadm.password", props.getProperty("db.password", ""));
+        String adminDatabase = props.getProperty("dbadm.name", "postgres");
 
         String targetHost = props.getProperty("db.host", adminHost);
         int targetPort = Integer.parseInt(props.getProperty("db.port", String.valueOf(adminPort)));
@@ -40,7 +41,7 @@ public class DatabaseInitializer {
         String targetPassword = props.getProperty("db.password", adminPassword);
 
         System.out.println("[DatabaseInitializer] Verificando banco PostgreSQL: " + targetDatabase + " em " + targetHost + ":" + targetPort);
-        ensureDatabaseExists(adminHost, adminPort, targetDatabase, adminUser, adminPassword);
+        ensureDatabaseExists(adminHost, adminPort, adminDatabase, targetDatabase, adminUser, adminPassword);
         executeSchemaScript(targetHost, targetPort, targetDatabase, targetUser, targetPassword);
         validateRequiredTables(targetHost, targetPort, targetDatabase, targetUser, targetPassword);
         System.out.println("[DatabaseInitializer] Banco e tabelas prontos.");
@@ -57,28 +58,25 @@ public class DatabaseInitializer {
         return props;
     }
 
-    private static void ensureDatabaseExists(String host, int port, String database, String user, String password) throws SQLException {
-        String adminUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database;
+    private static void ensureDatabaseExists(String host, int port, String adminDatabase, String targetDatabase, String user, String password) throws SQLException {
+        String adminUrl = "jdbc:postgresql://" + host + ":" + port + "/" + adminDatabase;
 
         try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
              PreparedStatement statement = connection.prepareStatement(
                      "SELECT 1 FROM pg_database WHERE datname = ?")) {
-            statement.setString(1, database);
+            statement.setString(1, targetDatabase);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     return;
                 }
             }
-        } catch (Exception ex) {
-            adminUrl = "jdbc:postgresql://" + host + ":" + port + "/postgres";
-            try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
-                 Statement statement = connection.createStatement()) {
-                statement.execute("CREATE DATABASE " + database);
-            }
         }
 
-
+        try (Connection connection = DriverManager.getConnection(adminUrl, user, password);
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE DATABASE " + quoteIdentifier(targetDatabase));
+        }
     }
 
     private static void executeSchemaScript(String host, int port, String database, String user, String password)
@@ -143,5 +141,9 @@ public class DatabaseInitializer {
         }
 
         throw new IllegalStateException("Arquivo db_ddl_from_domain.sql não encontrado no diretório raiz nem no classpath.");
+    }
+
+    private static String quoteIdentifier(String identifier) {
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 }
