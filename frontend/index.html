@@ -1,23 +1,147 @@
 <!DOCTYPE html>
-<html lang='pt-BR'>
+<html lang="pt-BR">
 
 <head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Cadastro</title>
-    <link rel='stylesheet' href='css/style.css'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Pessoas</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <div class='container'>
-        <h1>Cadastro de Pessoa</h1>
-        <form id='formPessoa'><input id='nome' placeholder='Nome' required><input id='email' type='email'
-                placeholder='Email' required><button type='submit'>Cadastrar</button></form>
-        <div id='resultado'></div>
-        <div id='uuid'></div>
-        
-    </div>
-    <script src='js/app.js'></script>
+    <main class="container">
+        <header>
+            <h1>Cadastro de Pessoas</h1>
+            <p>HTML, CSS e JavaScript puro, usando classes de dominio, DTO e service.</p>
+        </header>
+
+        <section>
+            <h2>Cadastrar pessoa simples</h2>
+            <form id="formPessoaSimples">
+                <label>Nome
+                    <input id="simplesNome" required>
+                </label>
+
+                <label>Idade
+                    <input id="simplesIdade" type="number" min="18" max="99" value="18" required>
+                </label>
+
+                <label>Email
+                    <input id="simplesEmail" type="email" required>
+                </label>
+
+                <label>Tipo sanguineo
+                    <input id="simplesTipoSanguineo" placeholder="O+">
+                </label>
+
+                <button type="submit">Cadastrar simples</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Cadastrar pessoa completa</h2>
+            <form id="formPessoaCompleta">
+                <fieldset>
+                    <legend>Pessoa</legend>
+                    <label>Nome
+                        <input id="completoNome" required>
+                    </label>
+
+                    <label>Idade
+                        <input id="completoIdade" type="number" min="18" max="99" value="18" required>
+                    </label>
+
+                    <label>Email
+                        <input id="completoEmail" type="email" required>
+                    </label>
+
+                    <label>Tipo sanguineo
+                        <input id="completoTipoSanguineo" placeholder="A+">
+                    </label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Endereco</legend>
+                    <label>Rua
+                        <input id="enderecoRua">
+                    </label>
+
+                    <label>Numero
+                        <input id="enderecoNumero">
+                    </label>
+
+                    <label>Cidade
+                        <input id="enderecoCidade">
+                    </label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Documento</legend>
+                    <label>Tipo
+                        <input id="documentoTipo" placeholder="CPF">
+                    </label>
+
+                    <label>Valor
+                        <input id="documentoValor">
+                    </label>
+
+                    <label>Demais dados
+                        <input id="documentoDemaisDados">
+                    </label>
+                </fieldset>
+
+                <button type="submit">Cadastrar completo</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Buscar, atualizar e excluir</h2>
+            <form id="formBuscarPessoa" class="linha">
+                <input id="buscarId" placeholder="UUID da pessoa" required>
+                <button type="submit">Buscar</button>
+            </form>
+
+            <form id="formAtualizarPessoa">
+                <label>ID
+                    <input id="atualizarId" required>
+                </label>
+
+                <label>Nome
+                    <input id="atualizarNome" required>
+                </label>
+
+                <label>Idade
+                    <input id="atualizarIdade" type="number" min="18" max="99" required>
+                </label>
+
+                <label>Email
+                    <input id="atualizarEmail" type="email" required>
+                </label>
+
+                <label>Tipo sanguineo
+                    <input id="atualizarTipoSanguineo">
+                </label>
+
+                <div class="linha">
+                    <button type="submit">Atualizar</button>
+                    <button type="button" id="btnExcluir">Excluir</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <h2>Pessoas cadastradas</h2>
+            <button id="btnListar" type="button">Listar pessoas</button>
+            <div id="listaPessoas" class="lista"></div>
+        </section>
+
+        <section>
+            <h2>Resultado</h2>
+            <pre id="resultado">Aguardando acao...</pre>
+        </section>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
 </body>
 
 </html>
