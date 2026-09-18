@@ -12,6 +12,9 @@ public class CadastrarPessoaUseCase {
     public Pessoa executar(CadastrarPessoaCommand command) throws IOException {
 
         Pessoa pessoa = new Pessoa(command.getNomePessoa(), command.getEmailPessoa());
+        pessoa.idade = command.getIdadePessoa();
+        pessoa.tipoSanguineo = command.getTipoSanguineo();
+
         PessoaJdbcRepository pessoaRepository = new PessoaJdbcRepository();
         pessoaRepository.insert(pessoa);
         command.id = pessoa.id;

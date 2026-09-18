@@ -13,7 +13,11 @@ public class PessoaRequestMapper {
     public CadastroPessoaResponse toCommand(CadastroPessoaRequest request) throws IOException {
 
         CadastrarPessoaCommand cadastrarPessoaCommand = new CadastrarPessoaCommand();
-        CadastroPessoaResponse cadastroPessoaResponse = cadastrarPessoaCommand.CadastrarPessoaCommand(request.getNome(),request.getEmail());
+        CadastroPessoaResponse cadastroPessoaResponse = cadastrarPessoaCommand.CadastrarPessoaCommand(
+                request.getNome(),
+                request.getIdade(),
+                request.getEmail(),
+                request.getTipoSanguineo());
         return cadastroPessoaResponse;
 
     }
