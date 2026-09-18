@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciclo total - Cadastro de Pessoa</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #eef2f7;
+            color: #1f2933;
+            font-family: Arial, sans-serif;
+        }
+
+        main {
+            width: min(1200px, calc(100% - 32px));
+            margin: 20px auto;
+        }
+
+        header,
+        section,
+        .caixa {
+            background: #ffffff;
+            border: 1px solid #d4dce7;
+            padding: 16px;
+        }
+
+        header {
+            margin-bottom: 16px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        .layout {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: 260px 1fr;
+        }
+
+        .trilha {
+            display: grid;
+            gap: 8px;
+        }
+
+        .passo {
+            border: 1px solid #c5cedb;
+            padding: 10px;
+        }
+
+        .passo.ativo {
+            background: #e7f0ff;
+            border-color: #1f6feb;
+            color: #0b3d91;
+            font-weight: bold;
+        }
+
+        .painel {
+            display: grid;
+            gap: 16px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        pre {
+            background: #101828;
+            color: #edf4ff;
+            margin: 0;
+            overflow: auto;
+            padding: 14px;
+            white-space: pre-wrap;
+        }
+
+        code {
+            font-family: Consolas, monospace;
+        }
+
+        .seta {
+            color: #1f6feb;
+            font-weight: bold;
+        }
+
+        .botoes {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        button {
+            background: #1f6feb;
+            border: 0;
+            color: #ffffff;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+            padding: 10px 14px;
+        }
+
+        .legenda {
+            background: #fff8db;
+            border: 1px solid #e6cf72;
+            padding: 12px;
+        }
+
+        .mini {
+            color: #52606d;
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .layout,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <header>
+            <h1>Ciclo total do cadastro de pessoa</h1>
+            <p>Do clique no frontend ate o banco e a resposta voltando para a tela.</p>
+            <p class="mini">Material feito para aluno acompanhar sem precisar abrir trace do Playwright.</p>
+        </header>
+
+        <div class="layout">
+            <aside class="caixa">
+                <h2>Trilha</h2>
+                <div id="trilha" class="trilha"></div>
+            </aside>
+
+            <section class="painel">
+                <div>
+                    <h2 id="titulo"></h2>
+                    <p id="explicacao"></p>
+                </div>
+
+                <div class="legenda" id="resumo"></div>
+
+                <div class="grid">
+                    <div class="caixa">
+                        <h3>Codigo em execucao</h3>
+                        <pre><code id="codigo"></code></pre>
+                    </div>
+
+                    <div class="caixa">
+                        <h3>O que passa neste ponto</h3>
+                        <pre><code id="dados"></code></pre>
+                    </div>
+                </div>
+
+                <div class="caixa">
+                    <h3>Caminho completo</h3>
+                    <p id="caminho"></p>
+                </div>
+
+                <div class="botoes">
+                    <button id="anterior" type="button">Anterior</button>
+                    <button id="proximo" type="button">Proximo</button>
+                    <button id="reiniciar" type="button">Reiniciar</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const passos = [
+            {
+                nome: '1. Frontend cria dominio',
+                titulo: 'O aluno preenche a tela e o JavaScript cria o dominio',
+                explicacao: 'No submit, o app.js le os inputs e cria uma Pessoa de dominio no frontend.',
+                resumo: 'Tela HTML -> app.js -> new Pessoa(...)',
+                codigo: `// frontend/js/app.js
+const pessoa = new Pessoa(
+    valor('simplesNome'),
+    valor('simplesIdade'),
+    valor('simplesEmail'),
+    valor('simplesTipoSanguineo'));`,
+                dados: `Pessoa {
+  nome: "Aluno Simples",
+  idade: 21,
+  email: "simples@email.com",
+  tipoSanguineo: "O+"
+}`,
+                caminho: ['HTML form', 'app.js', 'Pessoa.js']
+            },
+            {
+                nome: '2. Frontend cria DTO',
+                titulo: 'Dominio vira DTO de request',
+                explicacao: 'O DTO representa exatamente o JSON que a API espera receber.',
+                resumo: 'Pessoa -> CadastroPessoaRequest',
+                codigo: `// frontend/js/dto/CadastroPessoaRequest.js
+export class CadastroPessoaRequest {
+    constructor(pessoa) {
+        this.nome = pessoa.nome;
+        this.idade = pessoa.idade;
+        this.email = pessoa.email;
+        this.tipoSanguineo = pessoa.tipoSanguineo;
+    }
+}`,
+                dados: `{
+  "nome": "Aluno Simples",
+  "idade": 21,
+  "email": "simples@email.com",
+  "tipoSanguineo": "O+"
+}`,
+                caminho: ['Pessoa.js', 'CadastroPessoaRequest.js']
+            },
+            {
+                nome: '3. Service faz fetch',
+                titulo: 'Service envia o payload para o endpoint',
+                explicacao: 'PessoaService usa fetch. O JSON sai do navegador para o backend Spring Boot.',
+                resumo: 'POST http://localhost:8080/api/pessoas',
+                codigo: `// frontend/js/service/PessoaService.js
+async cadastrarSimples(request) {
+    return this.enviarJson('', 'POST', request);
+}
+
+const response = await fetch(this.baseUrl + caminho, opcoes);`,
+                dados: `POST /api/pessoas
+Content-Type: application/json
+
+{
+  "nome": "Aluno Simples",
+  "idade": 21,
+  "email": "simples@email.com",
+  "tipoSanguineo": "O+"
+}`,
+                caminho: ['PessoaService.js', 'HTTP POST', '/api/pessoas']
+            },
+            {
+                nome: '4. Controller recebe',
+                titulo: 'Spring desserializa o JSON no DTO Java',
+                explicacao: '@RequestBody pega o JSON e monta um CadastroPessoaRequest no Java.',
+                resumo: 'JSON -> CadastroPessoaRequest',
+                codigo: `// PessoaController.java
+@PostMapping
+public ResponseEntity<CadastroPessoaResponse> cadastrar(
+        @RequestBody CadastroPessoaRequest cadastroPessoaRequest) {
+
+    CadastroPessoaResponse cadastroPessoaResponse =
+        new PessoaRequestMapper().toCommand(cadastroPessoaRequest);
+
+    return ResponseEntity.ok(cadastroPessoaResponse);
+}`,
+                dados: `CadastroPessoaRequest {
+  nome = "Aluno Simples"
+  idade = 21
+  email = "simples@email.com"
+  tipoSanguineo = "O+"
+}`,
+                caminho: ['HTTP POST', 'PessoaController.cadastrar', '@RequestBody DTO']
+            },
+            {
+                nome: '5. Mapper chama Command',
+                titulo: 'Mapper passa o DTO para o command',
+                explicacao: 'O mapper ainda esta simples e rustico: cria o command e repassa os campos.',
+                resumo: 'CadastroPessoaRequest -> CadastrarPessoaCommand',
+                codigo: `// PessoaRequestMapper.java
+CadastrarPessoaCommand cadastrarPessoaCommand =
+    new CadastrarPessoaCommand();
+
+CadastroPessoaResponse cadastroPessoaResponse =
+    cadastrarPessoaCommand.CadastrarPessoaCommand(
+        request.getNome(),
+        request.getIdade(),
+        request.getEmail(),
+        request.getTipoSanguineo());`,
+                dados: `Parametros enviados:
+nome = "Aluno Simples"
+idade = 21
+email = "simples@email.com"
+tipoSanguineo = "O+"`,
+                caminho: ['PessoaController', 'PessoaRequestMapper', 'CadastrarPessoaCommand']
+            },
+            {
+                nome: '6. Command valida valor',
+                titulo: 'Command cria value objects',
+                explicacao: 'Aqui entram as classes de valor: NomePessoa, IdadePessoa e Email.',
+                resumo: 'String/int -> Value Objects',
+                codigo: `// CadastrarPessoaCommand.java
+this.nomePessoa = new NomePessoa(nomePessoa);
+this.idadePessoa = new IdadePessoa(idade != null ? idade : 18);
+this.emailPessoa = new Email(email);
+this.tipoSanguineo = tipoSanguineo;
+
+cadastrarPessoaUseCase.executar(this);`,
+                dados: `NomePessoa("Aluno Simples")
+IdadePessoa(21)
+Email("simples@email.com")
+tipoSanguineo = "O+"`,
+                caminho: ['CadastrarPessoaCommand', 'Value Objects', 'CadastrarPessoaUseCase']
+            },
+            {
+                nome: '7. UseCase cria Pessoa',
+                titulo: 'UseCase monta o dominio Java',
+                explicacao: 'O caso de uso cria Pessoa e manda salvar no repository.',
+                resumo: 'Command -> Pessoa -> Repository',
+                codigo: `// CadastrarPessoaUseCase.java
+Pessoa pessoa = new Pessoa(
+    command.getNomePessoa(),
+    command.getEmailPessoa());
+
+pessoa.idade = command.getIdadePessoa();
+pessoa.tipoSanguineo = command.getTipoSanguineo();
+
+PessoaJdbcRepository pessoaRepository = new PessoaJdbcRepository();
+pessoaRepository.insert(pessoa);`,
+                dados: `Pessoa {
+  id = UUID gerado
+  nome = NomePessoa
+  idade = IdadePessoa
+  email = Email
+  tipoSanguineo = "O+"
+}`,
+                caminho: ['UseCase', 'Pessoa.java', 'PessoaJdbcRepository.insert']
+            },
+            {
+                nome: '8. Repository prepara SQL',
+                titulo: 'Repository usa JDBC puro',
+                explicacao: 'Nao tem JPA nem framework de banco. O codigo abre conexao e usa PreparedStatement.',
+                resumo: 'Pessoa -> PreparedStatement -> PostgreSQL',
+                codigo: `// PessoaJdbcRepository.java
+private static final String INSERT =
+    "INSERT INTO pessoa (id, nome, idade, email, tipo_sanguineo, status, criado_em)" +
+    " VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+PreparedStatement ps = c.prepareStatement(INSERT);
+ps.setObject(1, pessoa.id);
+ps.setString(2, pessoa.nome.getValor());
+ps.setInt(3, pessoa.idade.getValor());
+ps.setString(4, pessoa.email.getValor());
+ps.setString(5, pessoa.tipoSanguineo);
+ps.executeUpdate();`,
+                dados: `SQL executado:
+INSERT INTO pessoa (...)
+VALUES (
+  uuid,
+  'Aluno Simples',
+  21,
+  'simples@email.com',
+  'O+',
+  1,
+  now
+)`,
+                caminho: ['Repository', 'ConexaoPostGreSQL', 'PreparedStatement', 'PostgreSQL']
+            },
+            {
+                nome: '9. Retorno sobe',
+                titulo: 'O retorno volta ate o controller',
+                explicacao: 'Depois de salvar, o id fica no command e a response e montada.',
+                resumo: 'Banco OK -> CadastroPessoaResponse',
+                codigo: `// CadastrarPessoaCommand.java
+CadastroPessoaResponse response = new CadastroPessoaResponse();
+response.setId(this.id);
+response.setNome(nomePessoa);
+response.setIdade(this.idadePessoa.getValor());
+response.setEmail(email);
+response.setTipoSanguineo(tipoSanguineo);
+
+return response;`,
+                dados: `CadastroPessoaResponse {
+  id: "uuid-da-pessoa",
+  nome: "Aluno Simples",
+  idade: 21,
+  email: "simples@email.com",
+  tipoSanguineo: "O+"
+}`,
+                caminho: ['PostgreSQL', 'Repository', 'UseCase', 'Command', 'Controller']
+            },
+            {
+                nome: '10. Frontend mostra resposta',
+                titulo: 'O JSON volta para o navegador',
+                explicacao: 'O service recebe a resposta, app.js mostra no painel Resultado e pode listar novamente.',
+                resumo: 'ResponseEntity.ok -> JSON -> app.js',
+                codigo: `// PessoaService.js
+const data = await response.json();
+return new CadastroPessoaResponse(data);
+
+// app.js
+mostrarResultado(response);
+await listarPessoas();`,
+                dados: `HTTP 200 OK
+
+{
+  "id": "uuid-da-pessoa",
+  "nome": "Aluno Simples",
+  "idade": 21,
+  "email": "simples@email.com",
+  "tipoSanguineo": "O+"
+}`,
+                caminho: ['Controller', 'HTTP 200', 'PessoaService', 'app.js', 'Tela']
+            },
+            {
+                nome: 'Extra. Cadastro completo',
+                titulo: 'Fluxo completo com endereco e documento',
+                explicacao: 'No endpoint /api/pessoas/completo o controller monta Pessoa, Endereco e Documento e salva tudo em transacao.',
+                resumo: 'POST /api/pessoas/completo -> insertWithRelations',
+                codigo: `// PessoaController.java
+@PostMapping("/completo")
+public ResponseEntity<CadastroPessoaResponse> cadastrarCompleto(
+        @RequestBody CadastroPessoaCompletoRequest request) {
+
+    Pessoa pessoa = criarPessoa(request);
+    List<Endereco> enderecos = criarEnderecos(request.getEnderecos());
+    List<Documento> documentos = criarDocumentos(request.getDocumentos());
+
+    repository.insertWithRelations(pessoa, enderecos, documentos);
+    return ResponseEntity.ok(toResponse(pessoa));
+}`,
+                dados: `{
+  "nome": "Aluno Completo",
+  "idade": 33,
+  "email": "completo@email.com",
+  "tipoSanguineo": "B+",
+  "enderecos": [{ "rua": "Rua da Aula", "numero": "100", "cidade": "Mogi" }],
+  "documentos": [{ "tipo": "CPF", "valor": "123", "demaisDados": "Principal" }]
+}`,
+                caminho: ['Frontend completo', '/api/pessoas/completo', 'Pessoa + Endereco + Documento', 'insertWithRelations', 'commit']
+            }
+        ];
+
+        let indice = 0;
+
+        const trilha = document.getElementById('trilha');
+        const titulo = document.getElementById('titulo');
+        const explicacao = document.getElementById('explicacao');
+        const resumo = document.getElementById('resumo');
+        const codigo = document.getElementById('codigo');
+        const dados = document.getElementById('dados');
+        const caminho = document.getElementById('caminho');
+
+        function renderizar() {
+            const passo = passos[indice];
+            titulo.textContent = passo.titulo;
+            explicacao.textContent = passo.explicacao;
+            resumo.textContent = passo.resumo;
+            codigo.textContent = passo.codigo;
+            dados.textContent = passo.dados;
+            caminho.innerHTML = passo.caminho.map((item) => `<span>${item}</span>`).join(' <span class="seta">-></span> ');
+
+            trilha.innerHTML = '';
+            passos.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'passo' + (index === indice ? ' ativo' : '');
+                div.textContent = item.nome;
+                div.addEventListener('click', () => {
+                    indice = index;
+                    renderizar();
+                });
+                trilha.appendChild(div);
+            });
+        }
+
+        document.getElementById('anterior').addEventListener('click', () => {
+            indice = Math.max(0, indice - 1);
+            renderizar();
+        });
+
+        document.getElementById('proximo').addEventListener('click', () => {
+            indice = Math.min(passos.length - 1, indice + 1);
+            renderizar();
+        });
+
+        document.getElementById('reiniciar').addEventListener('click', () => {
+            indice = 0;
+            renderizar();
+        });
+
+        renderizar();
+    </script>
+</body>
+
+</html>
