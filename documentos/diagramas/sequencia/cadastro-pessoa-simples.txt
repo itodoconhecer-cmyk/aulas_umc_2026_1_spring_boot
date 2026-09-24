@@ -1,9 +1,8 @@
-title Cadastro de Pessoa Simples - Frontend até PostgreSQL
+title Cadastro de Pessoa Simples - Interação UML baseada no código
 
 actor Usuario
 participant Browser
-participant HTML
-participant AppJS
+participant AppJS as app.js
 participant PessoaJS as Pessoa (Frontend)
 participant CadastroPessoaRequest
 participant PessoaService
@@ -11,103 +10,67 @@ participant PessoaController
 participant PessoaRequestMapper
 participant CadastrarPessoaCommand
 participant CadastrarPessoaUseCase
-participant Pessoa as Pessoa (Backend)
+participant PessoaBackend as Pessoa (Backend)
 participant PessoaJdbcRepository
 participant PostgreSQL
 participant CadastroPessoaResponse
 
-Usuario->Browser: Acessa aplicação
-Browser->HTML: Carrega frontend/index.html
-HTML->AppJS: Carrega js/app.js e registra eventos
-
-Usuario->HTML: Preenche Nome
-Usuario->HTML: Preenche Idade
-Usuario->HTML: Preenche Email
-Usuario->HTML: Preenche Tipo sanguíneo
-Usuario->HTML: Clica em "Cadastrar simples"
-
-HTML->AppJS: submit(formPessoaSimples)
-AppJS->AppJS: event.preventDefault()
+Usuario->Browser: preencher formulário e solicitar cadastro
+Browser->AppJS: submit(formPessoaSimples)
+activate AppJS
 
 AppJS->PessoaJS: new Pessoa(nome, idade, email, tipoSanguineo)
-activate PessoaJS
-PessoaJS-->AppJS: objeto Pessoa
-deactivate PessoaJS
+PessoaJS-->AppJS: pessoa
 
 AppJS->CadastroPessoaRequest: new CadastroPessoaRequest(pessoa)
-activate CadastroPessoaRequest
-CadastroPessoaRequest-->AppJS: DTO {nome, idade, email, tipoSanguineo}
-deactivate CadastroPessoaRequest
+CadastroPessoaRequest-->AppJS: request
 
 AppJS->PessoaService: cadastrarSimples(request)
 activate PessoaService
-PessoaService->PessoaService: enviarJson("", "POST", request)
-PessoaService->PessoaService: JSON.stringify(request)
-PessoaService->PessoaController: POST /api/pessoas\nContent-Type: application/json
-
+PessoaService->PessoaController: POST /api/pessoas (JSON)
 activate PessoaController
 
-alt Requisição válida
-    PessoaController->PessoaRequestMapper: new PessoaRequestMapper().toCommand(request)
+alt [requisição processada sem exceção]
+    PessoaController->PessoaRequestMapper: toCommand(request)
     activate PessoaRequestMapper
-    PessoaRequestMapper->CadastrarPessoaCommand: new CadastrarPessoaCommand()
+    PessoaRequestMapper->CadastrarPessoaCommand: CadastrarPessoaCommand(...)
     activate CadastrarPessoaCommand
-    PessoaRequestMapper->CadastrarPessoaCommand: CadastrarPessoaCommand(nome, idade, email, tipoSanguineo)
-    CadastrarPessoaCommand->CadastrarPessoaCommand: cria NomePessoa, IdadePessoa e Email
-    CadastrarPessoaCommand->CadastrarPessoaUseCase: new CadastrarPessoaUseCase().executar(this)
+    CadastrarPessoaCommand->CadastrarPessoaUseCase: executar(this)
     activate CadastrarPessoaUseCase
-
-    CadastrarPessoaUseCase->Pessoa: new Pessoa(nomePessoa, emailPessoa)
-    activate Pessoa
-    Pessoa-->CadastrarPessoaUseCase: entidade com UUID
-    deactivate Pessoa
-    CadastrarPessoaUseCase->Pessoa: define idade e tipoSanguineo
-
-    CadastrarPessoaUseCase->PessoaJdbcRepository: new PessoaJdbcRepository()
-    activate PessoaJdbcRepository
+    CadastrarPessoaUseCase->PessoaBackend: new Pessoa(nomePessoa, emailPessoa)
+    PessoaBackend-->CadastrarPessoaUseCase: pessoa com UUID
     CadastrarPessoaUseCase->PessoaJdbcRepository: insert(pessoa)
-    PessoaJdbcRepository->PostgreSQL: getConnection()
-    PessoaJdbcRepository->PostgreSQL: INSERT INTO pessoa\n(id,nome,idade,email,tipo_sanguineo,status,criado_em)
-    PostgreSQL-->PessoaJdbcRepository: registro persistido
-    PessoaJdbcRepository-->CadastrarPessoaUseCase: insert concluído
+    activate PessoaJdbcRepository
+    PessoaJdbcRepository->PostgreSQL: INSERT pessoa
+    PostgreSQL-->PessoaJdbcRepository: sucesso
     deactivate PessoaJdbcRepository
-
-    CadastrarPessoaUseCase->CadastrarPessoaCommand: command.id = pessoa.id
     CadastrarPessoaUseCase-->CadastrarPessoaCommand: pessoa
     deactivate CadastrarPessoaUseCase
-
-    CadastrarPessoaCommand->CadastroPessoaResponse: new CadastroPessoaResponse()
-    activate CadastroPessoaResponse
-    CadastrarPessoaCommand->CadastroPessoaResponse: setId, setNome, setIdade, setEmail, setTipoSanguineo
-    CadastroPessoaResponse-->CadastrarPessoaCommand: response preenchido
-    deactivate CadastroPessoaResponse
-    CadastrarPessoaCommand-->PessoaRequestMapper: CadastroPessoaResponse
+    CadastrarPessoaCommand->CadastroPessoaResponse: montar resposta
+    CadastroPessoaResponse-->CadastrarPessoaCommand: response
+    CadastrarPessoaCommand-->PessoaRequestMapper: response
     deactivate CadastrarPessoaCommand
-    PessoaRequestMapper-->PessoaController: CadastroPessoaResponse
+    PessoaRequestMapper-->PessoaController: response
     deactivate PessoaRequestMapper
-    PessoaController-->PessoaService: HTTP 200 OK\n{id,nome,idade,email,tipoSanguineo}
-else Exceção no fluxo
-    PessoaController-->PessoaService: HTTP 400 Bad Request
+    PessoaController-->PessoaService: HTTP 200 + JSON
+else [exceção]
+    PessoaController-->PessoaService: HTTP 400
 end
 
 deactivate PessoaController
 
-alt HTTP OK
-    PessoaService->PessoaService: response.json()
+alt [HTTP OK]
     PessoaService->CadastroPessoaResponse: new CadastroPessoaResponse(data)
-    activate CadastroPessoaResponse
-    CadastroPessoaResponse-->PessoaService: DTO de resposta
-    deactivate CadastroPessoaResponse
-    PessoaService-->AppJS: CadastroPessoaResponse
+    CadastroPessoaResponse-->PessoaService: response
+    PessoaService-->AppJS: response
     deactivate PessoaService
-    AppJS->HTML: mostrarResultado(response)
-    AppJS->HTML: reset()
+    AppJS->Browser: mostrarResultado(response)
     AppJS->PessoaService: listar()
-    note right of AppJS: Após o cadastro, o app também atualiza\na lista de pessoas via GET /api/pessoas
-    HTML->Usuario: Exibe JSON do cadastro e lista atualizada
-else HTTP não OK
-    PessoaService-->AppJS: throw Error("HTTP " + status)
+    note right of AppJS: O frontend atualiza a lista após o cadastro.
+else [HTTP não OK]
+    PessoaService-->AppJS: Error HTTP status
     deactivate PessoaService
-    AppJS->HTML: mostrarErro(erro)
-    HTML->Usuario: Exibe mensagem de erro
+    AppJS->Browser: mostrarErro(erro)
 end
+
+deactivate AppJS
