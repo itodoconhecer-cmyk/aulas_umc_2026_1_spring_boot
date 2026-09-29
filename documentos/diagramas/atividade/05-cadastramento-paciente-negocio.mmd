@@ -1,0 +1,69 @@
+flowchart TB
+    %% Activity Diagram - Cadastramento de Paciente
+    %% Processo de negocio da Clinica Medica - sem sistema
+
+    START((Inicio))
+
+    subgraph PAC["Paciente"]
+        direction TB
+        P1["Solicitar cadastro"]
+        P2["Informar dados pessoais"]
+        P3["Apresentar documentos"]
+        P4["Complementar informacoes"]
+        P5["Receber confirmacao do cadastro"]
+    end
+
+    subgraph REC["Recepcao"]
+        direction TB
+        R1["Orientar paciente sobre o cadastro"]
+        R2["Receber dados e documentos"]
+        R3["Conferir documentacao"]
+        G1{"Documentacao completa?"}
+        R4["Solicitar complementacao"]
+        R5["Receber complementacao"]
+        R6["Encaminhar cadastro para registro"]
+        R7["Informar conclusao ao paciente"]
+    end
+
+    subgraph ADM["Cadastro / Administracao"]
+        direction TB
+        A1["Registrar cadastro do paciente"]
+        A2["Gerar numero de cadastro / prontuario"]
+        A3["Confirmar cadastro concluido"]
+    end
+
+    END((Fim))
+
+    START --> P1
+    P1 --> R1
+    R1 --> P2
+    P2 --> P3
+    P3 --> R2
+    R2 --> R3
+    R3 --> G1
+
+    G1 -- "Nao" --> R4
+    R4 --> P4
+    P4 --> R5
+    R5 --> R6
+
+    G1 -- "Sim" --> R6
+
+    R6 --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> R7
+    R7 --> P5
+    P5 --> END
+
+    classDef paciente fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px,color:#000;
+    classDef recepcao fill:#fff2cc,stroke:#d6b656,stroke-width:2px,color:#000;
+    classDef adm fill:#d5e8d4,stroke:#82b366,stroke-width:2px,color:#000;
+    classDef gateway fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000;
+    classDef evento fill:#000000,stroke:#000000,color:#ffffff;
+
+    class P1,P2,P3,P4,P5 paciente;
+    class R1,R2,R3,R4,R5,R6,R7 recepcao;
+    class A1,A2,A3 adm;
+    class G1 gateway;
+    class START,END evento;
